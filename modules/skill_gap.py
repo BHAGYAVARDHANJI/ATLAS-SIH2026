@@ -39,3 +39,14 @@ def calculate_skill_gap(role, current_skills):
         })
 
     return results
+
+def load_employee_skills(employee_name):
+    file_path = Path(__file__).parent.parent / "data" / "current_skills.json"
+
+    with open(file_path, "r", encoding="utf-8") as file:
+        employees = json.load(file)
+
+    if employee_name not in employees:
+        return None
+
+    return employees[employee_name]
