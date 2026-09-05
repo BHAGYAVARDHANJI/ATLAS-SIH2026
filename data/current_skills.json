@@ -1,0 +1,12 @@
+{
+  "Rahul Sharma": {
+    "role": "Statistical Officer",
+    "skills": {
+      "Statistics": 65,
+      "Python": 40,
+      "SQL": 55,
+      "Data Analysis": 60,
+      "Data Visualization": 45
+    }
+  }
+}
