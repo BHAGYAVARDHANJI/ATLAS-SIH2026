@@ -1,5 +1,5 @@
 import streamlit as st
-from data import inject_custom_css, sidebar_profile_switcher, require_profile, get_recommendations, PRIORITY_COLORS
+from data import inject_custom_css, sidebar_profile_switcher, require_profile, get_recommendations, PRIORITY_COLORS, render_html
 
 st.set_page_config(page_title="ATLAS | Recommendations", page_icon="🎯", layout="wide")
 inject_custom_css()
@@ -22,18 +22,18 @@ if not recs:
 else:
     st.caption(f"Showing {len(recs)} course(s) tailored to the current skill gaps.")
     for r in recs:
-        color = PRIORITY_COLORS.get(r["priority"], "#4F8BF9")
-        st.markdown(f"""
-            <div class="atlas-card">
-                <h4 style="margin-bottom:2px;">📘 {r['course']}
-                    <span class="atlas-badge" style="background:{color}; float:right;">{r['priority']} priority</span>
-                </h4>
-                <p style="color:#9BA3AF; margin-bottom:6px;">
-                    Targets: <b>{r['skill']}</b> &nbsp;•&nbsp; Level: {r['level']} &nbsp;•&nbsp; Duration: {r['duration']}
-                </p>
-                <p>{r['reason']}</p>
-            </div>
-        """, unsafe_allow_html=True)
+        color = PRIORITY_COLORS.get(r["priority"], "#6C6CFF")
+        render_html(f"""
+        <div class="atlas-card">
+            <h4 style="margin-bottom:2px;">📘 {r['course']}
+                <span class="atlas-badge" style="background:{color}; float:right;">{r['priority']} priority</span>
+            </h4>
+            <p style="color:#9BA0B4; margin-bottom:6px;">
+                Targets: <b>{r['skill']}</b> &nbsp;•&nbsp; Level: {r['level']} &nbsp;•&nbsp; Duration: {r['duration']}
+            </p>
+            <p>{r['reason']}</p>
+        </div>
+        """)
 
 st.divider()
 st.page_link("pages/4_AI_Quiz.py", label="Next: Take AI Quiz →", icon="📝")
