@@ -6,6 +6,7 @@ from data import (
     inject_custom_css,
     sidebar_profile_switcher,
     require_profile,
+    require_login,
     get_competency_profile,
     calculate_skill_gap,
     PRIORITY_COLORS,
@@ -15,6 +16,7 @@ from chatbot import render_chatbot
 
 st.set_page_config(page_title="ATLAS | Skill Gap", page_icon="📊", layout="wide")
 inject_custom_css()
+require_login()
 sidebar_profile_switcher()
 profile = require_profile()
 

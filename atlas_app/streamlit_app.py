@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
+import db
+import auth
 from data import (
     inject_custom_css,
     sidebar_profile_switcher,
@@ -18,10 +20,61 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------------------------------------------------------
-# SETUP
-# ---------------------------------------------------------
+db.init_db()
+db.seed_demo_data()
+
 inject_custom_css()
+
+# ---------------------------------------------------------
+# LOGIN / SIGNUP GATE
+# Nothing below this block renders until someone is logged in.
+# ---------------------------------------------------------
+if not auth.is_authenticated():
+    render_html("""
+    <div class="atlas-hero">
+        <span class="atlas-eyebrow">ATLAS • ADAPTIVE TRAINING &amp; LEARNING ASSISTANCE SYSTEM</span>
+        <div class="atlas-hero-title">🎓 Welcome to ATLAS</div>
+        <div class="atlas-hero-sub">Log in or create an account to continue.</div>
+    </div>
+    """)
+
+    login_tab, signup_tab = st.tabs(["🔑 Log In", "🆕 Sign Up"])
+
+    with login_tab:
+        with st.form("login_form"):
+            login_username = st.text_input("Username")
+            login_password = st.text_input("Password", type="password")
+            login_submitted = st.form_submit_button("Log In", type="primary", use_container_width=True)
+
+        if login_submitted:
+            success, message = auth.login(login_username, login_password)
+            if success:
+                st.rerun()
+            else:
+                st.error(message)
+
+    with signup_tab:
+        with st.form("signup_form"):
+            signup_username = st.text_input("Choose a username")
+            signup_password = st.text_input("Choose a password", type="password")
+            signup_password_confirm = st.text_input("Confirm password", type="password")
+            signup_submitted = st.form_submit_button("Create Account", type="primary", use_container_width=True)
+
+        if signup_submitted:
+            if signup_password != signup_password_confirm:
+                st.error("Passwords do not match.")
+            else:
+                success, message = auth.signup(signup_username, signup_password)
+                if success:
+                    st.success(message + " Switch to the Log In tab above.")
+                else:
+                    st.error(message)
+
+    st.stop()
+
+# ---------------------------------------------------------
+# SETUP (only reached once logged in)
+# ---------------------------------------------------------
 sidebar_profile_switcher()
 
 profile = get_profile(st.session_state.selected_profile)

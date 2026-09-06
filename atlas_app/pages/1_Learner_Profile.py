@@ -1,8 +1,9 @@
 import streamlit as st
-from data import inject_custom_css, sidebar_profile_switcher, require_profile, render_html
+from data import inject_custom_css, sidebar_profile_switcher, require_profile, require_login, render_html
 
 st.set_page_config(page_title="ATLAS | Profile", page_icon="👤", layout="wide")
 inject_custom_css()
+require_login()
 sidebar_profile_switcher()
 profile = require_profile()
 

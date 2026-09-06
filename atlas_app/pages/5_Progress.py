@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from data import inject_custom_css, sidebar_profile_switcher, require_profile, get_progress_log
+from data import inject_custom_css, sidebar_profile_switcher, require_profile, require_login, get_progress_log
 
 st.set_page_config(page_title="ATLAS | Progress", page_icon="📈", layout="wide")
 inject_custom_css()
+require_login()
 sidebar_profile_switcher()
 profile = require_profile()
 

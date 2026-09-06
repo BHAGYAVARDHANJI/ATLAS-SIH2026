@@ -1,8 +1,9 @@
 import streamlit as st
-from data import inject_custom_css, sidebar_profile_switcher, require_profile, generate_quiz, save_progress
+from data import inject_custom_css, sidebar_profile_switcher, require_profile, require_login, generate_quiz, save_progress
 
 st.set_page_config(page_title="ATLAS | AI Quiz", page_icon="📝", layout="wide")
 inject_custom_css()
+require_login()
 sidebar_profile_switcher()
 profile = require_profile()
 
@@ -20,7 +21,7 @@ if "quiz_submitted" not in st.session_state:
 
 top1, top2 = st.columns([3, 1])
 with top1:
-    n_questions = st.slider("Number of questions", 2, 4, 3)
+    n_questions = st.slider("Number of questions", 5, 15, 10)
 with top2:
     st.write("")
     if st.button("🔄 Generate New Quiz", use_container_width=True):

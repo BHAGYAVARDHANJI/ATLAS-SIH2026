@@ -12,6 +12,10 @@ import random
 
 import streamlit as st
 
+import auth
+import db
+import quiz as ai_quiz
+
 # ============================================================
 # MOCK DATA (swap sources later, keep shapes identical)
 # ============================================================
@@ -92,8 +96,50 @@ MOCK_QUIZ_BANK = [
     {"q": "Which is a key input for Budget Forecasting?",
      "options": ["Historical spend data", "Employee birthdays", "Office seating chart", "Font size"],
      "answer": 0},
+    {"q": "In Python, which library is most commonly used for tabular data analysis?",
+     "options": ["pandas", "turtle", "tkinter", "socket"],
+     "answer": 0},
+    {"q": "In a SQL query with WHERE, GROUP BY and HAVING together, which clause is evaluated first?",
+     "options": ["HAVING", "GROUP BY", "WHERE", "They all run at the same time"],
+     "answer": 2},
+    {"q": "In statistics, a p-value below 0.05 is generally taken to mean:",
+     "options": ["The result is statistically significant", "The sample size is too small",
+                 "The data is perfectly normal", "The experiment failed"],
+     "answer": 0},
+    {"q": "Risk Assessment primarily involves:",
+     "options": ["Identifying risks and evaluating their likelihood and impact", "Formatting a spreadsheet",
+                 "Designing a company logo", "Scheduling annual leave"],
+     "answer": 0},
+    {"q": "Regulatory Compliance mainly ensures that an organization:",
+     "options": ["Follows the laws, rules and standards that apply to it", "Maximizes profit at any cost",
+                 "Avoids all documentation", "Reduces staff training"],
+     "answer": 0},
+    {"q": "A good official report should primarily be:",
+     "options": ["Vague and as long as possible", "Clear, well-structured and evidence-based",
+                 "Written only in technical jargon", "Free of any supporting data"],
+     "answer": 1},
+    {"q": "Financial Reporting is best described as:",
+     "options": ["Recording and presenting an organization's financial performance",
+                 "Designing office layouts", "Managing IT infrastructure", "Writing marketing copy"],
+     "answer": 0},
+    {"q": "A heatmap is most useful for showing:",
+     "options": ["Intensity or patterns across two categorical dimensions", "The exact value of a single number",
+                 "A strict chronological timeline", "A simple yes/no comparison"],
+     "answer": 0},
+    {"q": "In Python, which keyword is used to define a function?",
+     "options": ["func", "def", "function", "lambda only"],
+     "answer": 1},
+    {"q": "An INNER JOIN in SQL returns:",
+     "options": ["Only rows that match in both tables", "All rows from both tables regardless of a match",
+                 "Only rows from the left table", "Only rows with NULL values"],
+     "answer": 0},
+    {"q": "Which measure of central tendency is most affected by extreme outliers?",
+     "options": ["Mean", "Median", "Mode", "None of them are affected"],
+     "answer": 0},
 ]
 
+
+PRIORITY_COLORS = {"High": "#FF5C7A", "Medium": "#FFB454", "Low": "#6C6CFF", "None": "#37D6A0"}
 
 # ============================================================
 # FUNCTIONS (Member handoff points)
@@ -396,6 +442,14 @@ def inject_custom_css():
         }
         </style>
     """, unsafe_allow_html=True)
+
+
+def require_login():
+    """Guards pages that need a logged-in user. Stops the page (with a
+    message + link back Home) if nobody is authenticated yet."""
+    if not auth.is_authenticated():
+        st.warning("⚠️ You need to log in first. Go to the Home page to log in or sign up.")
+        st.stop()
 
 
 def require_profile():

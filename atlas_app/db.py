@@ -112,6 +112,14 @@ def init_db():
         is_correct INTEGER DEFAULT 0,
         FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_salt TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """)
     conn.commit()
     conn.close()
@@ -398,6 +406,29 @@ def get_assessments(profile_code: str) -> List[Dict[str, Any]]:
     """, (learner["id"],)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# ============================================================
+# AUTH HELPERS
+# ============================================================
+
+def create_user(username: str, password_salt: str, password_hash: str) -> None:
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO users (username, password_salt, password_hash) VALUES (?, ?, ?)",
+        (username, password_salt, password_hash),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_user(username: str) -> Optional[sqlite3.Row]:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT * FROM users WHERE username = ?", (username,)
+    ).fetchone()
+    conn.close()
+    return row
 
 
 if __name__ == "__main__":
