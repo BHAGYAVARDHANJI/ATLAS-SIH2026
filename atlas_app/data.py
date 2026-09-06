@@ -1,80 +1,27 @@
 """
 ATLAS — Shared Data Layer
-Member 1 owns this file's STRUCTURE. Replace the body of each function
-with real calls from Member 2 (competency/gap), Member 3 (quiz),
-Member 4 (DB), Member 5 (recommendations) as they hand off code.
-Keep function names + return shapes identical so the UI never breaks.
+Member 1 owns this file's STRUCTURE. Function names + return shapes are
+kept identical to the original mock version so the UI never breaks.
+
+Member 4 handoff: get_profile, get_competency_profile, save_progress and
+the course catalogue behind get_recommendations now come from db.py
+(SQLite) instead of hardcoded MOCK_* dictionaries.
 """
 
 import random
+
 import streamlit as st
 
-# ============================================================
-# MOCK DATA (swap sources later, keep shapes identical)
-# ============================================================
+import db
+import quiz as ai_quiz
 
-MOCK_PROFILES = {
-    "P001": {
-        "name": "Ananya Sharma",
-        "designation": "Assistant Section Officer",
-        "department": "Rural Development",
-        "role": "Data Analyst",
-        "qualifications": "B.Tech (CSE)",
-        "experience": "3 years",
-        "training_history": ["Basics of Data Analytics (2024)", "MS Excel Advanced (2023)"],
-        "avatar": "🧑‍💼",
-    },
-    "P002": {
-        "name": "Rohit Verma",
-        "designation": "Section Officer",
-        "department": "Finance",
-        "role": "Financial Analyst",
-        "qualifications": "MBA (Finance)",
-        "experience": "6 years",
-        "training_history": ["Public Financial Management (2022)"],
-        "avatar": "👨‍💼",
-    },
-    "P003": {
-        "name": "Rahul Sharma",
-        "designation": "Statistical Officer",
-        "department": "Statistics & Programme Implementation",
-        "role": "Statistical Officer",
-        "qualifications": "M.Sc (Statistics)",
-        "experience": "4 years",
-        "training_history": ["Applied Statistics for Policy (2023)", "Python for Data Analysis (2024)"],
-        "avatar": "📊",
-    },
-}
+# Make sure the database exists and is seeded the first time this
+# module is imported in a fresh environment (safe to call repeatedly —
+# everything uses INSERT OR IGNORE / OR REPLACE).
+db.init_db()
+db.seed_demo_data()
 
-MOCK_COMPETENCIES = {
-    "Data Analyst": [
-        {"competency": "Data Visualization", "current": 2, "required": 4},
-        {"competency": "SQL / Data Querying", "current": 3, "required": 4},
-        {"competency": "Statistical Analysis", "current": 2, "required": 5},
-        {"competency": "Report Writing", "current": 4, "required": 4},
-    ],
-    "Financial Analyst": [
-        {"competency": "Budgeting & Forecasting", "current": 3, "required": 5},
-        {"competency": "Financial Reporting", "current": 4, "required": 4},
-        {"competency": "Risk Assessment", "current": 2, "required": 4},
-        {"competency": "Regulatory Compliance", "current": 3, "required": 3},
-    ],
-    "Statistical Officer": [
-        {"competency": "Statistics", "current": 65, "required": 80},
-        {"competency": "Python", "current": 40, "required": 75},
-        {"competency": "SQL", "current": 55, "required": 70},
-        {"competency": "Data Analysis", "current": 60, "required": 80},
-        {"competency": "Data Visualization", "current": 45, "required": 70},
-    ],
-}
-
-MOCK_COURSE_CATALOG = [
-    {"course": "Data Visualization with Power BI", "skill": "Data Visualization", "level": "Intermediate", "duration": "6 hrs"},
-    {"course": "Advanced Statistical Methods", "skill": "Statistical Analysis", "level": "Advanced", "duration": "10 hrs"},
-    {"course": "SQL for Government Analysts", "skill": "SQL / Data Querying", "level": "Intermediate", "duration": "5 hrs"},
-    {"course": "Risk Assessment Frameworks", "skill": "Risk Assessment", "level": "Intermediate", "duration": "8 hrs"},
-    {"course": "Budget Forecasting Essentials", "skill": "Budgeting & Forecasting", "level": "Advanced", "duration": "7 hrs"},
-]
+PRIORITY_COLORS = {"High": "#FF5C7A", "Medium": "#FFB454", "Low": "#6C6CFF", "None": "#37D6A0"}
 
 MOCK_QUIZ_BANK = [
     {"q": "What does SQL stand for?",
@@ -91,37 +38,40 @@ MOCK_QUIZ_BANK = [
      "answer": 0},
 ]
 
-PRIORITY_COLORS = {"High": "#FF5C7A", "Medium": "#FFB454", "Low": "#6C6CFF", "None": "#37D6A0"}
-
 
 # ============================================================
 # FUNCTIONS (Member handoff points)
 # ============================================================
 
 def get_profile(profile_id):
-    """Member 4 → replace with real DB read."""
-    return MOCK_PROFILES.get(profile_id)
+    """Member 4 → now backed by SQLite (db.get_profile)."""
+    return db.get_profile(profile_id)
 
 
-def get_competency_profile(role):
-    """Member 2 → replace with real competency mapping."""
-    return MOCK_COMPETENCIES.get(role, [])
+def get_competency_profile(profile_id):
+    """
+    Member 2 → competency levels for this specific learner, from SQLite.
+
+    NOTE: this now takes the profile_id (e.g. "P001"), not the role
+    string, because real learners of the same role can be at different
+    levels. Call sites were updated to pass profile["id"] accordingly.
+    """
+    return db.get_competency_profile(profile_id)
 
 
 def calculate_skill_gap(competencies):
     """
     Member 2 — real gap formula.
-    Supports both the 0-5 scale (Data Analyst / Financial Analyst mock data)
-    and the 0-100 scale (Statistical Officer real competency framework) by
-    normalizing the gap to a percentage of that competency's own scale
-    before applying priority thresholds.
+    Supports both the 0-5 scale (Data Analyst / Financial Analyst) and
+    the 0-100 scale (Statistical Officer) by normalizing the gap to a
+    percentage of that competency's own scale before applying priority
+    thresholds.
     """
     rows = []
     for c in competencies:
         current, required = c["current"], c["required"]
         gap = max(required - current, 0)
 
-        # Infer the scale (0-5 vs 0-100) from the magnitude of the values.
         scale_max = 100 if max(current, required) > 5 else 5
         gap_percent = (gap / scale_max) * 100
 
@@ -139,33 +89,81 @@ def calculate_skill_gap(competencies):
 
 
 def get_recommendations(gap_rows):
-    """Member 5 → replace with real scoring/ranking logic."""
-    recs = []
-    for row in sorted(gap_rows, key=lambda r: -r["gap"]):
+    """
+    Member 5 — Personalized Course Recommendation Engine.
+    Courses now come from the iGOT course table in SQLite (db.get_courses),
+    so every competency in the DB has a matching course — no more silent
+    "no course found" gaps.
+    """
+    recommendations = []
+
+    sorted_gaps = sorted(gap_rows, key=lambda row: row["gap"], reverse=True)
+
+    for row in sorted_gaps:
         if row["gap"] <= 0:
             continue
-        for m in MOCK_COURSE_CATALOG:
-            if m["skill"] == row["competency"]:
-                recs.append({
-                    **m,
-                    "reason": f"Closes a {row['priority'].lower()}-priority gap of {row['gap']} level(s) in {row['competency']}.",
-                    "priority": row["priority"],
-                })
-    return recs[:5]
+
+        matches = db.get_courses(skill=row["competency"])
+        if not matches:
+            continue
+
+        course = matches[0]
+        recommendations.append({
+            "course": course["title"],
+            "skill": course["skill"],
+            "level": course["level"],
+            "duration": f"{course['duration_hours']:.0f} hrs",
+            "priority": row["priority"],
+            "gap": row["gap"],
+            "reason": (
+                f"Your current level is {row['current']} while the required "
+                f"level is {row['required']}. This creates a {row['gap']} "
+                f"level gap in {row['competency']}."
+            ),
+        })
+
+    return recommendations[:5]
 
 
-def generate_quiz(n=3):
-    """Member 3 → replace with LLM-generated MCQs; keep this as fallback."""
-    return random.sample(MOCK_QUIZ_BANK, min(n, len(MOCK_QUIZ_BANK)))
+def generate_quiz(n=3, profile_id=None):
+    """
+    Member 3 — tries a real AI-generated quiz (Gemini) personalised to
+    the learner's current skill gaps. Falls back to the static
+    MOCK_QUIZ_BANK if there's no API key, the call fails, or the
+    response can't be parsed — the P0 flow must never break just
+    because the AI call didn't work.
+
+    Returns: (questions, source) where source is "ai" or "fallback".
+    """
+    topics = []
+    if profile_id:
+        try:
+            comps = get_competency_profile(profile_id)
+            gaps = calculate_skill_gap(comps)
+            topics = [
+                g["competency"]
+                for g in sorted(gaps, key=lambda g: -g["gap"])
+                if g["gap"] > 0
+            ][:3]
+        except Exception:
+            topics = []
+
+    try:
+        questions = ai_quiz.generate_ai_quiz(topics, n)
+        return questions, "ai"
+    except Exception:
+        return random.sample(MOCK_QUIZ_BANK, min(n, len(MOCK_QUIZ_BANK))), "fallback"
 
 
 def save_progress(profile_id, score, total):
-    """Member 4 → replace with real DB write."""
-    if "progress_log" not in st.session_state:
-        st.session_state.progress_log = []
-    st.session_state.progress_log.append(
-        {"profile_id": profile_id, "score": score, "total": total}
-    )
+    """Member 4 → now persisted in SQLite (db.save_assessment) instead of
+    only living in st.session_state, so it survives an app restart."""
+    db.save_assessment(profile_id, score, total, quiz_title="ATLAS Quiz")
+
+
+def get_progress_log(profile_id):
+    """New helper for the Progress page — reads persisted attempts from SQLite."""
+    return db.get_assessments(profile_id)
 
 
 # ============================================================
@@ -225,14 +223,12 @@ def inject_custom_css():
                 var(--atlas-bg);
         }
 
-        /* Sidebar */
         div[data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0D101B 0%, #0A0C14 100%);
             border-right: 1px solid var(--atlas-border);
         }
         div[data-testid="stSidebar"] * { color: var(--atlas-text) !important; }
 
-        /* Generic card */
         .atlas-card {
             background: linear-gradient(180deg, var(--atlas-surface) 0%, rgba(20,24,38,0.7) 100%);
             border: 1px solid var(--atlas-border);
@@ -246,7 +242,6 @@ def inject_custom_css():
             border-color: rgba(108,108,255,0.35);
         }
 
-        /* Hero banner */
         .atlas-hero {
             padding: 34px 36px;
             border-radius: 22px;
@@ -285,7 +280,6 @@ def inject_custom_css():
             font-size: 1.02rem;
         }
 
-        /* Badges */
         .atlas-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -307,7 +301,6 @@ def inject_custom_css():
             letter-spacing: 0.06em;
         }
 
-        /* Metric tiles */
         div[data-testid="stMetric"] {
             background: linear-gradient(180deg, var(--atlas-surface) 0%, rgba(20,24,38,0.55) 100%);
             border: 1px solid var(--atlas-border);
@@ -318,7 +311,6 @@ def inject_custom_css():
         div[data-testid="stMetricLabel"] { color: var(--atlas-text-dim) !important; }
         div[data-testid="stMetricValue"] { color: var(--atlas-text) !important; font-family: 'Sora', sans-serif; }
 
-        /* Buttons / links */
         .stButton > button, .stPageLink a, a[data-testid="stPageLink"] {
             border-radius: 12px !important;
             border: 1px solid var(--atlas-border) !important;
@@ -331,22 +323,18 @@ def inject_custom_css():
             transform: translateY(-1px);
         }
 
-        /* Progress bar */
         div[data-testid="stProgress"] > div > div {
             background: linear-gradient(90deg, var(--atlas-accent), var(--atlas-accent-2)) !important;
         }
 
-        /* Dividers */
         hr { border-color: var(--atlas-border) !important; }
 
-        /* Chat bubbles */
         div[data-testid="stChatMessage"] {
             background: var(--atlas-surface);
             border: 1px solid var(--atlas-border);
             border-radius: 14px;
         }
 
-        /* Journey / list rows */
         .atlas-row {
             display:flex;
             align-items:center;
@@ -387,10 +375,14 @@ def sidebar_profile_switcher():
     st.sidebar.markdown("### 🎓 ATLAS")
     st.sidebar.caption("Smart Education Platform")
     st.sidebar.divider()
+
+    profile_codes = db.get_all_profile_codes()
+    profiles_by_code = {code: get_profile(code) for code in profile_codes}
+
     profile_id = st.sidebar.selectbox(
         "Active Learner",
-        options=list(MOCK_PROFILES.keys()),
-        format_func=lambda pid: f"{MOCK_PROFILES[pid]['avatar']} {MOCK_PROFILES[pid]['name']}",
+        options=profile_codes,
+        format_func=lambda pid: f"{profiles_by_code[pid]['avatar']} {profiles_by_code[pid]['name']}",
         key="selected_profile",
     )
     return profile_id

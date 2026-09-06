@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from data import inject_custom_css, sidebar_profile_switcher, require_profile
+from data import inject_custom_css, sidebar_profile_switcher, require_profile, get_progress_log
 
 st.set_page_config(page_title="ATLAS | Progress", page_icon="📈", layout="wide")
 inject_custom_css()
@@ -11,7 +11,9 @@ profile = require_profile()
 st.title("📈 Progress Dashboard")
 st.divider()
 
-log = st.session_state.get("progress_log", [])
+# Persisted in SQLite (db.py) — survives an app restart, unlike the old
+# session-only progress_log.
+log = get_progress_log(st.session_state.selected_profile)
 
 if not log:
     st.info("No quiz attempts yet. Complete a quiz to see progress here.")
@@ -19,6 +21,7 @@ if not log:
     st.stop()
 
 df = pd.DataFrame(log)
+df["total"] = df["total_questions"]
 df["percent"] = (df["score"] / df["total"] * 100).round(1)
 df["attempt"] = range(1, len(df) + 1)
 

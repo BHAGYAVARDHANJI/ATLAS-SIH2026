@@ -11,6 +11,8 @@ st.divider()
 
 if "current_quiz" not in st.session_state:
     st.session_state.current_quiz = None
+if "quiz_source" not in st.session_state:
+    st.session_state.quiz_source = None
 if "quiz_answers" not in st.session_state:
     st.session_state.quiz_answers = {}
 if "quiz_submitted" not in st.session_state:
@@ -22,7 +24,10 @@ with top1:
 with top2:
     st.write("")
     if st.button("🔄 Generate New Quiz", use_container_width=True):
-        st.session_state.current_quiz = generate_quiz(n_questions)
+        with st.spinner("Generating your quiz..."):
+            questions, source = generate_quiz(n_questions, profile_id=st.session_state.selected_profile)
+        st.session_state.current_quiz = questions
+        st.session_state.quiz_source = source
         st.session_state.quiz_answers = {}
         st.session_state.quiz_submitted = False
 
@@ -31,6 +36,11 @@ quiz = st.session_state.current_quiz
 if not quiz:
     st.info("Click **Generate New Quiz** to begin.")
     st.stop()
+
+if st.session_state.quiz_source == "ai":
+    st.caption("🤖 AI-generated quiz, personalized to your biggest skill gaps.")
+else:
+    st.caption("📦 Showing the built-in fallback quiz (AI unavailable right now).")
 
 answered = len(st.session_state.quiz_answers)
 st.progress(answered / len(quiz), text=f"{answered}/{len(quiz)} answered")

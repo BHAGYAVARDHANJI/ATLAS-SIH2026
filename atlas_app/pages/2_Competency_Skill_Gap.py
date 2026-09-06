@@ -24,7 +24,7 @@ st.divider()
 # ---------------------------------------------------------
 # DATA
 # ---------------------------------------------------------
-competencies = get_competency_profile(profile["role"])
+competencies = get_competency_profile(profile["id"])
 gap_rows = calculate_skill_gap(competencies) if competencies else []
 df = pd.DataFrame(gap_rows)
 
