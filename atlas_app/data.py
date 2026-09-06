@@ -52,26 +52,66 @@ MOCK_COMPETENCIES = {
 }
 
 MOCK_COURSE_CATALOG = [
-    {"course": "Data Visualization with Power BI", "skill": "Data Visualization", "level": "Intermediate", "duration": "6 hrs"},
-    {"course": "Advanced Statistical Methods", "skill": "Statistical Analysis", "level": "Advanced", "duration": "10 hrs"},
-    {"course": "SQL for Government Analysts", "skill": "SQL / Data Querying", "level": "Intermediate", "duration": "5 hrs"},
-    {"course": "Risk Assessment Frameworks", "skill": "Risk Assessment", "level": "Intermediate", "duration": "8 hrs"},
-    {"course": "Budget Forecasting Essentials", "skill": "Budgeting & Forecasting", "level": "Advanced", "duration": "7 hrs"},
-]
 
-MOCK_QUIZ_BANK = [
-    {"q": "What does SQL stand for?",
-     "options": ["Structured Query Language", "Simple Query Logic", "Sequential Query Language", "Standard Query List"],
-     "answer": 0},
-    {"q": "Which chart type best shows a trend over time?",
-     "options": ["Pie chart", "Line chart", "Scatter plot", "Heatmap"],
-     "answer": 1},
-    {"q": "A skill gap score is calculated as?",
-     "options": ["Current - Required", "Required - Current", "Required / Current", "Current x Required"],
-     "answer": 1},
-    {"q": "Which is a key input for Budget Forecasting?",
-     "options": ["Historical spend data", "Employee birthdays", "Office seating chart", "Font size"],
-     "answer": 0},
+    # -------- Data Analyst Courses --------
+
+    {
+        "course": "Data Visualization with Power BI",
+        "skill": "Data Visualization",
+        "level": "Intermediate",
+        "duration": "6 hrs"
+    },
+
+    {
+        "course": "SQL for Data Analysts",
+        "skill": "SQL / Data Querying",
+        "level": "Intermediate",
+        "duration": "6 hrs"
+    },
+
+    {
+        "course": "Advanced Statistical Analysis",
+        "skill": "Statistical Analysis",
+        "level": "Advanced",
+        "duration": "10 hrs"
+    },
+
+    {
+        "course": "Professional Report Writing",
+        "skill": "Report Writing",
+        "level": "Intermediate",
+        "duration": "5 hrs"
+    },
+
+    # -------- Statistical Officer Courses --------
+
+    {
+        "course": "Advanced Statistics for Officers",
+        "skill": "Statistical Analysis",
+        "level": "Advanced",
+        "duration": "10 hrs"
+    },
+
+    {
+        "course": "Python for Data Analysis",
+        "skill": "Python",
+        "level": "Intermediate",
+        "duration": "8 hrs"
+    },
+
+    {
+        "course": "SQL for Data Management",
+        "skill": "SQL / Data Querying",
+        "level": "Intermediate",
+        "duration": "6 hrs"
+    },
+
+    {
+        "course": "Data Analysis Fundamentals",
+        "skill": "Data Analysis",
+        "level": "Intermediate",
+        "duration": "7 hrs"
+    }
 ]
 
 PRIORITY_COLORS = {"High": "#FF4B4B", "Medium": "#FFA500", "Low": "#4F8BF9", "None": "#2ECC71"}
@@ -109,20 +149,53 @@ def calculate_skill_gap(competencies):
 
 
 def get_recommendations(gap_rows):
-    """Member 5 → replace with real scoring/ranking logic."""
-    recs = []
-    for row in sorted(gap_rows, key=lambda r: -r["gap"]):
+    """
+    Member 5 — Personalized Course Recommendation Engine.
+
+    Courses are selected according to the learner's skill gaps
+    and ranked from highest gap to lowest gap.
+    """
+
+    recommendations = []
+
+    # Sort skills by biggest gap first
+    sorted_gaps = sorted(
+        gap_rows,
+        key=lambda row: row["gap"],
+        reverse=True
+    )
+
+    for row in sorted_gaps:
+
+        # No gap = no course needed
         if row["gap"] <= 0:
             continue
-        for m in MOCK_COURSE_CATALOG:
-            if m["skill"] == row["competency"]:
-                recs.append({
-                    **m,
-                    "reason": f"Closes a {row['priority'].lower()}-priority gap of {row['gap']} level(s) in {row['competency']}.",
-                    "priority": row["priority"],
-                })
-    return recs[:5]
 
+               # Find the best matching course for this competency
+        for course in MOCK_COURSE_CATALOG:
+
+            if course["skill"] == row["competency"]:
+
+                recommendations.append({
+                    **course,
+
+                    "priority": row["priority"],
+
+                    "gap": row["gap"],
+
+                    "reason": (
+                        f"Your current level is {row['current']} "
+                        f"while the required level is {row['required']}. "
+                        f"This creates a {row['gap']} level gap in "
+                        f"{row['competency']}."
+                    )
+                })
+
+                # Only one course per skill gap
+                break
+
+    # Return maximum 5 recommendations
+    return recommendations[:5]
 
 def generate_quiz(n=3):
     """Member 3 → replace with LLM-generated MCQs; keep this as fallback."""
