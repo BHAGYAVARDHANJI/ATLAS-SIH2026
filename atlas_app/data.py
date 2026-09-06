@@ -34,6 +34,16 @@ MOCK_PROFILES = {
         "training_history": ["Public Financial Management (2022)"],
         "avatar": "👨‍💼",
     },
+    "P003": {
+        "name": "Rahul Sharma",
+        "designation": "Statistical Officer",
+        "department": "Statistics & Programme Implementation",
+        "role": "Statistical Officer",
+        "qualifications": "M.Sc (Statistics)",
+        "experience": "4 years",
+        "training_history": ["Applied Statistics for Policy (2023)", "Python for Data Analysis (2024)"],
+        "avatar": "📊",
+    },
 }
 
 MOCK_COMPETENCIES = {
@@ -48,6 +58,13 @@ MOCK_COMPETENCIES = {
         {"competency": "Financial Reporting", "current": 4, "required": 4},
         {"competency": "Risk Assessment", "current": 2, "required": 4},
         {"competency": "Regulatory Compliance", "current": 3, "required": 3},
+    ],
+    "Statistical Officer": [
+        {"competency": "Statistics", "current": 65, "required": 80},
+        {"competency": "Python", "current": 40, "required": 75},
+        {"competency": "SQL", "current": 55, "required": 70},
+        {"competency": "Data Analysis", "current": 60, "required": 80},
+        {"competency": "Data Visualization", "current": 45, "required": 70},
     ],
 }
 
@@ -92,18 +109,31 @@ def get_competency_profile(role):
 
 
 def calculate_skill_gap(competencies):
-    """Member 2 → replace with the real gap formula."""
+    """
+    Member 2 — real gap formula.
+    Supports both the 0-5 scale (Data Analyst / Financial Analyst mock data)
+    and the 0-100 scale (Statistical Officer real competency framework) by
+    normalizing the gap to a percentage of that competency's own scale
+    before applying priority thresholds.
+    """
     rows = []
     for c in competencies:
-        gap = c["required"] - c["current"]
-        if gap >= 3:
-            priority = "High"
-        elif gap == 2:
-            priority = "Medium"
-        elif gap <= 0:
+        current, required = c["current"], c["required"]
+        gap = max(required - current, 0)
+
+        # Infer the scale (0-5 vs 0-100) from the magnitude of the values.
+        scale_max = 100 if max(current, required) > 5 else 5
+        gap_percent = (gap / scale_max) * 100
+
+        if gap <= 0:
             priority = "None"
+        elif gap_percent >= 30:
+            priority = "High"
+        elif gap_percent >= 20:
+            priority = "Medium"
         else:
             priority = "Low"
+
         rows.append({**c, "gap": gap, "priority": priority})
     return rows
 
