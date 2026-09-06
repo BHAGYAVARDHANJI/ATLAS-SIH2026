@@ -30,12 +30,13 @@ c3.metric("Best Score", f"{df['percent'].max()}%")
 st.subheader("Score Trend")
 fig = px.line(df, x="attempt", y="percent", markers=True,
               labels={"attempt": "Attempt #", "percent": "Score (%)"})
-fig.update_traces(line_color="#4F8BF9", marker=dict(size=9))
+fig.update_traces(line_color="#6C6CFF", marker=dict(size=9, color="#37D6C4"))
 fig.update_layout(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font_color="#FAFAFA", height=380, yaxis_range=[0, 100],
+    font_color="#F5F6FA", height=380, yaxis_range=[0, 100],
+    xaxis=dict(gridcolor="#2A3047"), yaxis=dict(gridcolor="#2A3047"),
 )
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 st.subheader("Attempt Log")
 st.dataframe(df[["attempt", "score", "total", "percent"]], use_container_width=True, hide_index=True)
