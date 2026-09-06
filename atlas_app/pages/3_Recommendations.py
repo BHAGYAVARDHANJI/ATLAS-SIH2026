@@ -17,7 +17,7 @@ if not gap_rows:
     st.page_link("pages/2_Competency_Skill_Gap.py", label="Go to Skill Gap →", icon="📊")
     st.stop()
 
-recommendations = get_recommendations(gap_rows)
+recs = get_recommendations(gap_rows)
 
 if not recs:
     st.success("🎉 No significant skill gaps — this learner is up to date!")
