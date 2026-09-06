@@ -12,16 +12,72 @@ import random
 
 import streamlit as st
 
-import db
-import quiz as ai_quiz
+# ============================================================
+# MOCK DATA (swap sources later, keep shapes identical)
+# ============================================================
 
-# Make sure the database exists and is seeded the first time this
-# module is imported in a fresh environment (safe to call repeatedly —
-# everything uses INSERT OR IGNORE / OR REPLACE).
-db.init_db()
-db.seed_demo_data()
+MOCK_PROFILES = {
+    "P001": {
+        "name": "Ananya Sharma",
+        "designation": "Assistant Section Officer",
+        "department": "Rural Development",
+        "role": "Data Analyst",
+        "qualifications": "B.Tech (CSE)",
+        "experience": "3 years",
+        "training_history": ["Basics of Data Analytics (2024)", "MS Excel Advanced (2023)"],
+        "avatar": "🧑‍💼",
+    },
+    "P002": {
+        "name": "Rohit Verma",
+        "designation": "Section Officer",
+        "department": "Finance",
+        "role": "Financial Analyst",
+        "qualifications": "MBA (Finance)",
+        "experience": "6 years",
+        "training_history": ["Public Financial Management (2022)"],
+        "avatar": "👨‍💼",
+    },
+    "P003": {
+        "name": "Rahul Sharma",
+        "designation": "Statistical Officer",
+        "department": "Statistics & Programme Implementation",
+        "role": "Statistical Officer",
+        "qualifications": "M.Sc (Statistics)",
+        "experience": "4 years",
+        "training_history": ["Applied Statistics for Policy (2023)", "Python for Data Analysis (2024)"],
+        "avatar": "📊",
+    },
+}
 
-PRIORITY_COLORS = {"High": "#FF5C7A", "Medium": "#FFB454", "Low": "#6C6CFF", "None": "#37D6A0"}
+MOCK_COMPETENCIES = {
+    "Data Analyst": [
+        {"competency": "Data Visualization", "current": 2, "required": 4},
+        {"competency": "SQL / Data Querying", "current": 3, "required": 4},
+        {"competency": "Statistical Analysis", "current": 2, "required": 5},
+        {"competency": "Report Writing", "current": 4, "required": 4},
+    ],
+    "Financial Analyst": [
+        {"competency": "Budgeting & Forecasting", "current": 3, "required": 5},
+        {"competency": "Financial Reporting", "current": 4, "required": 4},
+        {"competency": "Risk Assessment", "current": 2, "required": 4},
+        {"competency": "Regulatory Compliance", "current": 3, "required": 3},
+    ],
+    "Statistical Officer": [
+        {"competency": "Statistics", "current": 65, "required": 80},
+        {"competency": "Python", "current": 40, "required": 75},
+        {"competency": "SQL", "current": 55, "required": 70},
+        {"competency": "Data Analysis", "current": 60, "required": 80},
+        {"competency": "Data Visualization", "current": 45, "required": 70},
+    ],
+}
+
+MOCK_COURSE_CATALOG = [
+    {"course": "Data Visualization with Power BI", "skill": "Data Visualization", "level": "Intermediate", "duration": "6 hrs"},
+    {"course": "Advanced Statistical Methods", "skill": "Statistical Analysis", "level": "Advanced", "duration": "10 hrs"},
+    {"course": "SQL for Government Analysts", "skill": "SQL / Data Querying", "level": "Intermediate", "duration": "5 hrs"},
+    {"course": "Risk Assessment Frameworks", "skill": "Risk Assessment", "level": "Intermediate", "duration": "8 hrs"},
+    {"course": "Budget Forecasting Essentials", "skill": "Budgeting & Forecasting", "level": "Advanced", "duration": "7 hrs"},
+]
 
 MOCK_QUIZ_BANK = [
     {"q": "What does SQL stand for?",
@@ -89,40 +145,19 @@ def calculate_skill_gap(competencies):
 
 
 def get_recommendations(gap_rows):
-    """
-    Member 5 — Personalized Course Recommendation Engine.
-    Courses now come from the iGOT course table in SQLite (db.get_courses),
-    so every competency in the DB has a matching course — no more silent
-    "no course found" gaps.
-    """
-    recommendations = []
-
-    sorted_gaps = sorted(gap_rows, key=lambda row: row["gap"], reverse=True)
-
-    for row in sorted_gaps:
+    """Member 5 → replace with real scoring/ranking logic."""
+    recs = []
+    for row in sorted(gap_rows, key=lambda r: -r["gap"]):
         if row["gap"] <= 0:
             continue
-
-        matches = db.get_courses(skill=row["competency"])
-        if not matches:
-            continue
-
-        course = matches[0]
-        recommendations.append({
-            "course": course["title"],
-            "skill": course["skill"],
-            "level": course["level"],
-            "duration": f"{course['duration_hours']:.0f} hrs",
-            "priority": row["priority"],
-            "gap": row["gap"],
-            "reason": (
-                f"Your current level is {row['current']} while the required "
-                f"level is {row['required']}. This creates a {row['gap']} "
-                f"level gap in {row['competency']}."
-            ),
-        })
-
-    return recommendations[:5]
+        for m in MOCK_COURSE_CATALOG:
+            if m["skill"] == row["competency"]:
+                recs.append({
+                    **m,
+                    "reason": f"Closes a {row['priority'].lower()}-priority gap of {row['gap']} level(s) in {row['competency']}.",
+                    "priority": row["priority"],
+                })
+    return recs[:5]
 
 
 def generate_quiz(n=3, profile_id=None):
