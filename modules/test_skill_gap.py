@@ -1,26 +1,27 @@
-from skill_gap import calculate_skill_gap
+from skill_gap import calculate_skill_gap, load_employee_skills
 
 
-current_skills = {
-    "Statistics": 65,
-    "Python": 40,
-    "SQL": 55,
-    "Data Analysis": 60,
-    "Data Visualization": 45
-}
+employee_name = "Rahul Sharma"
 
+employee = load_employee_skills(employee_name)
 
-results = calculate_skill_gap(
-    "Statistical Officer",
-    current_skills
-)
+if employee is None:
+    print("Employee not found.")
+else:
+    role = employee["role"]
+    current_skills = employee["skills"]
 
+    print(f"\nEmployee: {employee_name}")
+    print(f"Role: {role}")
+    print("\nSkill Gap Analysis:")
 
-for result in results:
-    print(
-        f"{result['skill']}: "
-        f"Current={result['current']}, "
-        f"Required={result['required']}, "
-        f"Gap={result['gap']}, "
-        f"Priority={result['priority']}"
-    )
+    results = calculate_skill_gap(role, current_skills)
+
+    for result in results:
+        print(
+            f"{result['skill']}: "
+            f"Current={result['current']}, "
+            f"Required={result['required']}, "
+            f"Gap={result['gap']}, "
+            f"Priority={result['priority']}"
+        )

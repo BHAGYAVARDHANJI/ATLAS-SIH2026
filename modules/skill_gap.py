@@ -23,9 +23,9 @@ def calculate_skill_gap(role, current_skills):
 
         gap = max(required_level - current_level, 0)
 
-        if gap >= 31:
+        if gap >= 30:
             priority = "High"
-        elif gap >= 16:
+        elif gap >= 20:
             priority = "Medium"
         else:
             priority = "Low"

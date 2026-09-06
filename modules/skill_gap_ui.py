@@ -388,16 +388,16 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    st.radio(
-        "Navigation",
-        [
-            "Skill Gap Analysis",
-            "Learning Recommendations",
-            "Assessment",
-            "Progress"
-        ],
-        label_visibility="collapsed"
-    )
+    page = st.radio(
+    "Navigation",
+    [
+        "Skill Gap Analysis",
+        "Learning Recommendations",
+        "Assessment",
+        "Progress"
+    ],
+    label_visibility="collapsed"
+)
 
 
 # =========================================================
@@ -686,25 +686,31 @@ if analyze:
 
                     </div>
 
-                    <div class="progress-background">
-
+                    <div class="comparison-bar">
                         <div
-                            class="progress-current"
+                            class="current-bar"
                             style="width:{current}%;">
                         </div>
 
+                        <div
+                            class="required-marker"
+                            style="left:{required}%;">
+                        </div>
                     </div>
 
-                    <div class="progress-labels">
-                        <span>Current proficiency: {current}%</span>
-                        <span>Skill gap: {gap}%</span>
+                    <div class="comparison-labels">
+                        <span>Current: <b>{current}%</b></span>
+                        <span>Required: <b>{required}%</b></span>
+                    </div>
+
+                    <div class="gap-label">
+                        Skill Gap: <b>{gap}%</b>
                     </div>
 
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-
 
         # -----------------------------------------------
         # DEVELOPMENT FOCUS
