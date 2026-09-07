@@ -179,7 +179,8 @@ for _, row in df.sort_values("gap", ascending=False).iterrows():
     """)
 
 st.divider()
-st.page_link("pages/3_Recommendations.py", label="Next: Get Recommendations →", icon="🎯")
+if st.button("🎯 Next: Get Recommendations →", type="primary", width="stretch"):
+    st.switch_page("pages/3_Recommendations.py")
 
 # =========================================================
 # ATLAS AI COACH (free, rule-based — no external API needed)

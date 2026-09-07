@@ -50,7 +50,7 @@ if not auth.is_authenticated():
             login_username = st.text_input("Username")
             login_password = st.text_input("Password", type="password")
             login_submitted = st.form_submit_button(
-                "Log In", type="primary", use_container_width=True
+                "Log In", type="primary", width="stretch"
             )
 
         if login_submitted:
@@ -77,7 +77,7 @@ if not auth.is_authenticated():
             signup_password = st.text_input("Choose a password", type="password")
             signup_password_confirm = st.text_input("Confirm password", type="password")
             signup_submitted = st.form_submit_button(
-                "Create Account", type="primary", use_container_width=True
+                "Create Account", type="primary", width="stretch"
             )
 
         if signup_submitted:
@@ -204,16 +204,13 @@ with snapshot_right:
     </div>
     """)
 
-st.markdown("### 🧭 Your ATLAS Learning Journey")
-journey = [
-    ("01", "Learner Profile", "Understand your role, qualifications and training history."),
-    ("02", "Skill Gap Analysis", "Identify the difference between current and required competencies."),
-    ("03", "Personalized Recommendations", "Discover learning resources targeted to your biggest gaps."),
-    ("04", "AI Quiz", "Validate your understanding and identify weak areas."),
-    ("05", "Progress Tracking", "Measure improvement and continuously refine your learning path."),
-]
-for number, title, description in journey:
-    render_html(f"<div class=\"atlas-row\"><div class=\"atlas-row-index\">{number}</div><div><div style=\"font-weight:700; font-size:1rem;\">{title}</div><div style=\"color:#9BA0B4; font-size:0.88rem; margin-top:3px;\">{description}</div></div></div>")
+journey_steps = ["Learner Profile", "Skill Gap Analysis", "Recommendations", "AI Quiz", "Progress Tracking"]
+steps_html = "".join(
+    f'<div class="atlas-step"><span class="atlas-step-dot">{i+1}</span><span>{name}</span></div>'
+    + ('<div class="atlas-step-line"></div>' if i < len(journey_steps) - 1 else '')
+    for i, name in enumerate(journey_steps)
+)
+render_html(f'<div class="atlas-step-track">{steps_html}</div>')
 
 st.markdown("### ⚡ Quick Actions")
 q1, q2, q3 = st.columns(3)

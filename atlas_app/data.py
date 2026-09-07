@@ -191,19 +191,42 @@ def calculate_skill_gap(competencies):
 
 
 def get_recommendations(gap_rows):
-    """Member 5 → replace with real scoring/ranking logic."""
+    """
+    Return learning recommendations for the learner's actual skill gaps.
+
+    Recommendations come from the SQLite/iGOT catalogue so the catalogue
+    used here stays in sync with db.py. Results are ranked by the largest
+    gap first, and skills that are already at the required level are ignored.
+    """
     recs = []
-    for row in sorted(gap_rows, key=lambda r: -r["gap"]):
+
+    for row in sorted(gap_rows, key=lambda r: (-r["gap"], r["competency"])):
         if row["gap"] <= 0:
             continue
-        for m in MOCK_COURSE_CATALOG:
-            if m["skill"] == row["competency"]:
-                recs.append({
-                    **m,
-                    "reason": f"Closes a {row['priority'].lower()}-priority gap of {row['gap']} level(s) in {row['competency']}.",
-                    "priority": row["priority"],
-                })
-    return recs[:5]
+
+        courses = db.get_courses(skill=row["competency"])
+
+        for course in courses:
+            recs.append({
+                "course": course["title"],
+                "skill": course["skill"],
+                "level": course.get("level") or "Recommended",
+                "duration": (
+                    f"{course['duration_hours']:g} hrs"
+                    if course.get("duration_hours") is not None
+                    else "Self-paced"
+                ),
+                "description": course.get("description", ""),
+                "source": course.get("source", "iGOT"),
+                "reason": (
+                    f"Closes a {row['priority'].lower()}-priority gap of "
+                    f"{row['gap']} level(s) in {row['competency']}."
+                ),
+                "priority": row["priority"],
+                "gap": row["gap"],
+            })
+
+    return recs[:6]
 
 
 def generate_quiz(n=3, profile_id=None):
@@ -269,49 +292,184 @@ def render_html(html: str):
     st.markdown(compact, unsafe_allow_html=True)
 
 
+def get_theme() -> str:
+    """Current UI theme for this session: 'dark' (default) or 'light'."""
+    return st.session_state.get("atlas_theme", "dark")
+
+
+def set_theme(theme: str):
+    st.session_state.atlas_theme = "light" if theme == "light" else "dark"
+
+
+def theme_toggle_control(container=st.sidebar):
+    """Render a ☀️ / 🌙 theme switch. Call once per page, in the sidebar."""
+    current = get_theme()
+    labels = {"dark": "🌙 Dark mode", "light": "☀️ Light mode"}
+    choice = container.radio(
+        "Appearance",
+        options=["dark", "light"],
+        index=0 if current == "dark" else 1,
+        format_func=lambda t: labels[t],
+        key="atlas_theme_choice",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    if choice != current:
+        set_theme(choice)
+        st.rerun()
+
+
 def inject_custom_css():
-    st.markdown("""
+    theme = get_theme()
+
+    if theme == "light":
+        palette = {
+            "bg": "#F5F7FB",
+            "bg-glow-1": "rgba(108,108,255,0.10)",
+            "bg-glow-2": "rgba(55,214,196,0.08)",
+            "surface": "#FFFFFF",
+            "surface-2": "#F0F2F8",
+            "border": "rgba(15,18,30,0.10)",
+            "text": "#171A23",
+            "text-dim": "#5B6072",
+            "sidebar-grad": "linear-gradient(180deg, #FFFFFF 0%, #F2F4FA 100%)",
+            "shadow": "0 6px 20px rgba(30,34,60,0.08)",
+        }
+    else:
+        palette = {
+            "bg": "#0B0D14",
+            "bg-glow-1": "rgba(108,108,255,0.16)",
+            "bg-glow-2": "rgba(55,214,196,0.10)",
+            "surface": "#141826",
+            "surface-2": "#1B2033",
+            "border": "rgba(255,255,255,0.08)",
+            "text": "#F5F6FA",
+            "text-dim": "#9BA0B4",
+            "sidebar-grad": "linear-gradient(180deg, #0D101B 0%, #0A0C14 100%)",
+            "shadow": "0 6px 24px rgba(0,0,0,0.25)",
+        }
+
+    dynamic_css = f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
-        :root {
+        :root {{
             --atlas-accent: #6C6CFF;
             --atlas-accent-2: #37D6C4;
             --atlas-danger: #FF5C7A;
             --atlas-warning: #FFB454;
             --atlas-success: #37D6A0;
-            --atlas-bg: #0B0D14;
-            --atlas-surface: #141826;
-            --atlas-surface-2: #1B2033;
-            --atlas-border: rgba(255,255,255,0.08);
-            --atlas-text: #F5F6FA;
-            --atlas-text-dim: #9BA0B4;
-        }
+            --atlas-bg: {palette['bg']};
+            --atlas-surface: {palette['surface']};
+            --atlas-surface-2: {palette['surface-2']};
+            --atlas-border: {palette['border']};
+            --atlas-text: {palette['text']};
+            --atlas-text-dim: {palette['text-dim']};
+        }}
 
-        html, body, [class*="css"] {
+        /* ---- Remove default Streamlit chrome so this reads as a real app ---- */
+        #MainMenu {{ visibility: hidden; }}
+        footer {{ visibility: hidden; }}
+        [data-testid="stToolbar"] {{ visibility: hidden; }}
+        [data-testid="stDecoration"] {{ display: none; }}
+        [data-testid="stStatusWidget"] {{ visibility: hidden; }}
+
+        html, body, [class*="css"] {{
             font-family: 'Plus Jakarta Sans', sans-serif !important;
-        }
+        }}
 
-        h1, h2, h3, h4, h5, .atlas-hero-title {
+        h1, h2, h3, h4, h5, .atlas-hero-title {{
             font-family: 'Sora', sans-serif !important;
             letter-spacing: -0.02em;
-        }
+        }}
 
-        .stApp {
+        .stApp {{
             background:
-                radial-gradient(circle at 12% -10%, rgba(108,108,255,0.16), transparent 45%),
-                radial-gradient(circle at 90% 0%, rgba(55,214,196,0.10), transparent 40%),
+                radial-gradient(circle at 12% -10%, var(--atlas-glow-1, {palette['bg-glow-1']}), transparent 45%),
+                radial-gradient(circle at 90% 0%, var(--atlas-glow-2, {palette['bg-glow-2']}), transparent 40%),
                 var(--atlas-bg);
-        }
+        }}
+        .stApp, .stApp p, .stApp span, .stApp label, .stApp li {{ color: var(--atlas-text); }}
 
-        div[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #0D101B 0%, #0A0C14 100%);
+        div[data-testid="stSidebar"] {{
+            background: {palette['sidebar-grad']};
             border-right: 1px solid var(--atlas-border);
-        }
-        div[data-testid="stSidebar"] * { color: var(--atlas-text) !important; }
+        }}
+        div[data-testid="stSidebar"] * {{ color: var(--atlas-text) !important; }}
 
+        /* ---- Inputs / widgets follow the chosen theme too ---- */
+        div[data-testid="stTextInput"] input,
+        div[data-testid="stTextArea"] textarea,
+        div[data-baseweb="select"] > div,
+        div[data-testid="stNumberInput"] input {{
+            background-color: var(--atlas-surface) !important;
+            color: var(--atlas-text) !important;
+            border-color: var(--atlas-border) !important;
+        }}
+        div[data-testid="stForm"] {{
+            background: var(--atlas-surface);
+            border: 1px solid var(--atlas-border);
+            border-radius: 16px;
+            padding: 18px 20px;
+        }}
+        div[data-testid="stExpander"], div[data-baseweb="tab-list"] {{
+            background: var(--atlas-surface);
+            border: 1px solid var(--atlas-border);
+            border-radius: 12px;
+        }}
+        div[data-testid="stDataFrame"] {{ border: 1px solid var(--atlas-border); border-radius: 12px; }}
+
+        /* ---- Give the page a readable max-width like a real product, not an edge-to-edge admin panel ---- */
+        div[data-testid="stAppViewBlockContainer"] {{
+            max-width: 1200px;
+        }}
+        </style>
+    """
+
+    static_css = """
+        <style>
+        .atlas-step-track {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0;
+            background: var(--atlas-surface);
+            border: 1px solid var(--atlas-border);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 22px;
+        }
+        .atlas-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--atlas-text);
+            white-space: nowrap;
+        }
+        .atlas-step-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: white;
+            background: linear-gradient(135deg, var(--atlas-accent), var(--atlas-accent-2));
+            flex-shrink: 0;
+        }
+        .atlas-step-line {
+            flex: 1;
+            min-width: 24px;
+            height: 2px;
+            background: var(--atlas-border);
+            margin: 0 14px;
+        }
         .atlas-card {
-            background: linear-gradient(180deg, var(--atlas-surface) 0%, rgba(20,24,38,0.7) 100%);
+            background: var(--atlas-surface);
             border: 1px solid var(--atlas-border);
             border-radius: 16px;
             padding: 20px 22px;
@@ -441,37 +599,58 @@ def inject_custom_css():
             font-family: 'Sora', sans-serif;
         }
         </style>
-    """, unsafe_allow_html=True)
+    """
+
+    st.markdown(dynamic_css + static_css, unsafe_allow_html=True)
 
 
 def require_login():
-    """Guards pages that need a logged-in user. Stops the page (with a
-    message + link back Home) if nobody is authenticated yet."""
+    """Stop protected pages unless a valid authenticated learner exists."""
     if not auth.is_authenticated():
-        st.warning("⚠️ You need to log in first. Go to the Home page to log in or sign up.")
+        st.warning("⚠️ Please log in first.")
         st.stop()
 
 
 def require_profile():
-    """Guards pages that need a profile selected first."""
-    if "selected_profile" not in st.session_state or st.session_state.selected_profile is None:
-        st.warning("⚠️ No learner profile selected yet. Go to the Home page first.")
+    """Return the learner profile linked to the authenticated account."""
+    require_login()
+    profile_id = auth.current_profile_id()
+    if not profile_id:
+        st.error("⚠️ Your account is not linked to a learner profile.")
         st.stop()
-    return get_profile(st.session_state.selected_profile)
+
+    profile = get_profile(profile_id)
+    if profile is None:
+        st.error("⚠️ The linked learner profile could not be found.")
+        st.stop()
+
+    return profile
 
 
 def sidebar_profile_switcher():
-    st.sidebar.markdown("### 🎓 ATLAS")
-    st.sidebar.caption("Smart Education Platform")
-    st.sidebar.divider()
+    """Render authenticated learner identity, theme control and logout."""
+    require_login()
+    profile_id = auth.current_profile_id()
+    profile = get_profile(profile_id) if profile_id else None
+    if profile is None:
+        st.error("⚠️ No valid learner is linked to this account.")
+        st.stop()
 
-    profile_codes = db.get_all_profile_codes()
-    profiles_by_code = {code: get_profile(code) for code in profile_codes}
-
-    profile_id = st.sidebar.selectbox(
-        "Active Learner",
-        options=profile_codes,
-        format_func=lambda pid: f"{profiles_by_code[pid]['avatar']} {profiles_by_code[pid]['name']}",
-        key="selected_profile",
+    # The authenticated account is the single source of truth for the learner.
+    # Do not assign to a widget-backed session-state key here.
+    st.sidebar.markdown("## 🎓 ATLAS")
+    st.sidebar.caption("Adaptive Learning Intelligence")
+    st.sidebar.markdown(
+        f'''<div class="atlas-card" style="padding:14px 16px; margin:14px 0;">
+            <div style="font-size:1.9rem;">{profile["avatar"]}</div>
+            <div style="font-weight:800; font-size:1.05rem; margin-top:4px;">{profile["name"]}</div>
+            <div style="color:var(--atlas-text-dim); font-size:.82rem; margin-top:2px;">{profile["role"]}</div>
+            <div style="color:var(--atlas-text-dim); font-size:.75rem; margin-top:8px;">Signed in as <b>{st.session_state.get("auth_username", "User")}</b></div>
+        </div>''' ,
+        unsafe_allow_html=True,
     )
+    theme_toggle_control(st.sidebar)
+    if st.sidebar.button("🚪 Log Out", width="stretch", key="atlas_logout"):
+        auth.logout()
+        st.rerun()
     return profile_id

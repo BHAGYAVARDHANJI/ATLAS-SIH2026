@@ -46,4 +46,5 @@ for t in profile["training_history"]:
     st.markdown(f"- {t}")
 
 st.divider()
-st.page_link("pages/2_Competency_Skill_Gap.py", label="Next: View Skill Gap →", icon="📊")
+if st.button("📊 Next: View Skill Gap →", type="primary", width="stretch"):
+    st.switch_page("pages/2_Competency_Skill_Gap.py")
